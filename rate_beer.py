@@ -1,15 +1,22 @@
+''' Functions to query ratebeer.com'''
 from fuzzywuzzy import fuzz
+import custom_exceptions
 import ratebeer
 
 RB = ratebeer.RateBeer()
 
 
 def query_ratebeer(query):
+    ''' Search ratebeer for a given query.'''
     results = RB.search(query)
     return results
 
 
 def fuzzy_query_match(query, beers):
+    ''' Find the best partial match between a
+        search query and beer object and return
+        the beer object.
+    '''
     pr = []
     for beer in beers:
         compare = fuzz.partial_ratio(query.lower(), beer.name.lower())
@@ -19,68 +26,50 @@ def fuzzy_query_match(query, beers):
     return best_match
 
 
-def fetch_data(data, key):
-    fetched_data = []
-    breweries = data.get(key)
-    for x in breweries:
+def check_choice_error(choice):
+    ''' Raise an error if choice is not beers or breweries.'''
+    valid = ['beers', 'breweries']
+    if choice not in valid:
+        raise custom_exceptions.InvalidChoice(choice, valid)
 
-        brewery = RB.get_brewery(x.url, fetch=True)
-        fetched_data.append(brewery)
+
+def fetch_data(data, key):
+    ''' Fetch the search results from ratebeer.
+    Args:
+        data: ratebeer search results
+        key: 'beers' or 'breweries'
+    '''
+    check_choice_error(key)
+    breweries = data.get(key)
+    fetched_data = []
+    if breweries:
+        func = RB.get_beer if key == 'beers' else RB.get_brewery
+        for x in breweries:
+            # fetch boolean required to ensure all data is obtained
+            brewery = func(x.url, fetch=True)
+            fetched_data.append(brewery)
     return fetched_data
 
 
-def get_beer_info(query):
+def get_info_dict(query, choice):
+    ''' Search rate beer for a beer or brewery query
+        and return the best matched objects attributes.
+    Args:
+        query: search query
+        choice: 'beers' or 'breweries'
+    '''
     try:
+        check_choice_error(choice)
         search_results = query_ratebeer(query)
-        beers = search_results.get('beers')
+        beers = fetch_data(search_results, choice)
         if beers:
-            # indexing here is VERY presumptious
-            # dict to stop AttributeError occuring and instead to return None
             if len(beers) > 1 or not all(x.name is None for x in beers):
                 beer_match = fuzzy_query_match(query, beers)
-            beer_url = beer_match.url
-            beer = RB.get_beer(beer_url, fetch=True).__dict__
-
-            # print(beer)
-            ratebeer_dict = {'beerrate_overall': beer.get('overall_rating'),
-                             'beerrate_number': beer.get('num_ratings'),
-                             'style_rating': beer.get('style_rating'),
-                             'beerrate_style': beer.get('style'),
-                             'beerrate_name': beer.get('name'),
-                             'calories': beer.get('calories'),
-                             'beerrate_ibu': beer.get('ibu'),
-                             'beerrate_abv': beer.get('abv')}
-            # return ratebeer_dict
+            else:
+                beer_match = beers[0]
+            beer = beer_match.__dict__
             return beer
         else:
-            print('WARNING: no beer info for {}'.format(query))
+            print('WARNING: no {} info for {}'.format(choice, query))
     except ratebeer.rb_exceptions.PageNotFound:
-        print('WARNING: no beer info for {}'.format(query))
-        return None
-
-
-def get_brewery_info(query):
-    try:
-        search_results = query_ratebeer(query)
-        breweries = fetch_data(search_results, 'breweries')
-        if breweries:
-            # indexing is VERY presumptious
-            if len(breweries) > 1 or not all(x.name is None for x in breweries):
-                brewery_match = fuzzy_query_match(query, breweries)
-            else:
-                brewery_match = breweries[0]
-            brewery = brewery_match.__dict__
-            # print(brewery)
-            brewery_dict = {'city': brewery.get('city'),
-                            'country': brewery.get('country'),
-                            'state': brewery.get('state'),
-                            'location': brewery.get('location'),
-                            'brewery_name': brewery.get('name'),
-                            'brewery_type': brewery.get('type')}
-            # return brewery_dict
-            return brewery
-        else:
-            print('WARNING: no brewery info for {}'.format(query))
-    except ratebeer.rb_exceptions.PageNotFound:
-        print('WARNING: no brewery info for {}'.format(query))
-        return None
+        print('WARNING: no {} info for {}'.format(choice, query))
