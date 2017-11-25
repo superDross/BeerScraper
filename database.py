@@ -16,7 +16,10 @@ def combine_dicts(dicts):
 
 
 # Generators may be better
-for product in get_all_products()[15:20]:
+all_products = get_all_products()[15:20]
+print('Processing {} products from beer hawk.'.format(len(all_products)))
+
+for product in all_products:
     beerhawk_info = extract_info(product)
     beerhawk_specs = extract_beer_specs(beerhawk_info['Link'])
     beer = beerhawk_info['Beer']
