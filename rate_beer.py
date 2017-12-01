@@ -2,6 +2,7 @@
 from fuzzywuzzy import fuzz
 import custom_exceptions
 import ratebeer
+import time
 
 RB = ratebeer.RateBeer()
 
@@ -39,6 +40,7 @@ def fetch_data(data, key):
         data: ratebeer search results
         key: 'beers' or 'breweries'
     '''
+    time.sleep(1)
     check_choice_error(key)
     breweries = data.get(key)
     fetched_data = []
@@ -61,6 +63,7 @@ def get_info_dict(query, choice):
     try:
         check_choice_error(choice)
         search_results = query_ratebeer(query)
+        # ensure at least 1 second between requests to ratebeer
         beers = fetch_data(search_results, choice)
         if beers:
             if len(beers) > 1 or not all(x.name is None for x in beers):
@@ -73,3 +76,16 @@ def get_info_dict(query, choice):
             print('WARNING: no {} info for {}'.format(choice, query))
     except ratebeer.rb_exceptions.PageNotFound:
         print('WARNING: no {} info for {}'.format(choice, query))
+
+
+#
+# def get_all_info(query_beer, query_brewery):
+#     full_beer = '{} {}'.format(query_brewery, query_beer)
+#     time.sleep(1)
+#     brewery_info = get_info_dict(query_brewery, 'breweries')
+#     # sleep required to
+#     time.sleep(1)
+#     beer_info = get_info_dict(full_beer, 'beers')
+#     from database import combine_dicts
+#     all_beer_info = combine_dicts([beer_info, brewery_info])
+#     return all_beer_info
