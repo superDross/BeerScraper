@@ -1,4 +1,4 @@
-from beerhawk_product import BeerHawkProduct
+from beerhawk import BeerHawkProduct
 from rate_beer import get_info_dict
 from beerdb import get_all_beer_features
 import pandas as pd
@@ -59,7 +59,8 @@ def do_it():
     #    # required as max requests is 1/second
     #    time.sleep(1)
     #    # ratebeer_brewery = get_brewery_info(beerhawk_info['Brewery'])
-    #    ratebeer_brewery = get_info_dict(beerhawk_info['Brewery'], 'breweries')
+    #    ratebeer_brewery = get_info_dict(beerhawk_info['Brewery'],
+    # 'breweries')
     #    time.sleep(1)
     #    all_beerhawk_info = {**beerhawk_info, **beerhawk_specs}
     #    scrapped_data = [beerhawk_info, beerhawk_specs,
