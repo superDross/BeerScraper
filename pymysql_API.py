@@ -1,8 +1,8 @@
 # https://www.tutorialspoint.com/python3/python_database_access.htm
 from tabulate import tabulate
+import sys
 
 
-# INSERT only if it doesn't already exist in database??????
 class DataBase(object):
     ''' Represents a SQL database.
 
@@ -29,6 +29,8 @@ class DataBase(object):
             except Exception as e:
                 print('ERROR: {}'.format(e))
                 self.db.rollback()
+                self.close()
+                sys.exit()
 
     def print(self, command, table):
         ''' Print the command.'''
@@ -49,7 +51,6 @@ class DataBase(object):
         command = base_command.format(table, column, query)
         with self.db.cursor() as cursor:
             exist = cursor.execute(command)
-            print(exist)
             return num2bool.get(exist)
 
     def close(self):
