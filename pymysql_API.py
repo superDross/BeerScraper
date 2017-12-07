@@ -1,9 +1,11 @@
 # https://www.tutorialspoint.com/python3/python_database_access.htm
 from tabulate import tabulate
 import pandas as pd
+import collections
 import sys
 
 
+# create a Table class which inherits from DataBase
 class DataBase(object):
     ''' Represents a SQL database.
 
@@ -32,6 +34,25 @@ class DataBase(object):
                 self.db.rollback()
                 self.close()
                 sys.exit()
+
+    def dict2cmd(self, dictionary, table):
+        ''' Construct a INSERT SQL command from a dict and execute the command.
+            Where the keys are column names in table and items are values.
+        '''
+        dictionary = collections.OrderedDict(dictionary)
+        keys = ', '.join([k for k, i in dictionary.items()])
+        items = []
+        for k, i in dictionary.items():
+            if isinstance(i, int) or isinstance(i, float):
+                i = str(i)
+            elif i is None:
+                i = 'NULL'
+            else:
+                i = "'{}'".format(i)
+            items.append(i)
+        items = ', '.join(items)
+        sql_cmd = 'INSERT INTO {} ({}) VALUES ({})'.format(table, keys, items)
+        self.cmd(sql_cmd)
 
     def print(self, command, table):
         ''' Print the command.'''

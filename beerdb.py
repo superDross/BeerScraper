@@ -10,6 +10,15 @@ import json
 KEY = APIkeys.keys.get('BreweryDB')
 
 
+class BeerDB_beer(object):
+    ''' beer_dict = get_all_beer_features('Punk IPA')
+        beer = BeerDB_beer(**beer_dict)
+    '''
+
+    def __init__(self, **args):
+        self.__dict__.update(args)
+
+
 def get_json_data(link):
     ''' Download the json text from a given link.'''
     req = requests.get(link)
