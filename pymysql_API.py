@@ -1,5 +1,6 @@
 # https://www.tutorialspoint.com/python3/python_database_access.htm
 from tabulate import tabulate
+import pandas as pd
 import sys
 
 
@@ -52,6 +53,12 @@ class DataBase(object):
         with self.db.cursor() as cursor:
             exist = cursor.execute(command)
             return num2bool.get(exist)
+
+    def to_pandas(self, table):
+        ''' Convert a database table to pandas DataFrame.'''
+        command = 'SELECT * FROM {}'.format(table)
+        df = pd.read_sql(command, con=self.db)
+        return df
 
     def close(self):
         ''' Close the database object.'''

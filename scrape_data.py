@@ -32,6 +32,7 @@ def decode_dict_items(dictionary):
     ''' Decode and remove accents from dictionary items.'''
     for k, i in dictionary.items():
         if isinstance(i, str):
+            i = i.replace("\\u", "")
             dictionary[k] = unidecode.unidecode(i)
     return dictionary
 
@@ -66,10 +67,8 @@ def open_database():
 
 def do_it():
     beer_db = open_database()
-    all_products = get_all_beerhawk_products()
-    print('Processing {} products from beer hawk.'.format(len(all_products)))
     product_index = -1
-    for product in all_products[5:]:
+    for product in get_all_beerhawk_products()[23:]:
         product_index += 1
         beer = BeerHawkProduct(product)
         full_beer = '{} {}'.format(beer.brewery, beer.beer_name)
