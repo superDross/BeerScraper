@@ -2,6 +2,7 @@
 from tabulate import tabulate
 
 
+# INSERT only if it doesn't already exist in database??????
 class DataBase(object):
     ''' Represents a SQL database.
 
@@ -25,18 +26,31 @@ class DataBase(object):
             try:
                 cursor.execute(command)
                 self.db.commit()
-            except:
+            except Exception as e:
+                print('ERROR: {}'.format(e))
                 self.db.rollback()
 
-    def print(self, command):
+    def print(self, command, table):
         ''' Print the command.'''
         with self.db.cursor() as cursor:
             cursor.execute(command)
             tupled_table = cursor.fetchall()
-            cursor.execute('DESCRIBE BEERS')
+            cursor.execute('DESCRIBE {}'.format(table))
             column_names = [x[0] for x in cursor.fetchall()]
             table = tabulate(tupled_table, column_names)
             print(table)
+
+    def exists(self, table, column, query):
+        ''' Checks if a query is present within a given table
+            column. Returns a Boolean.
+        '''
+        num2bool = {1: True, 0: False}
+        base_command = "SELECT * FROM {} WHERE {} = '{}'"
+        command = base_command.format(table, column, query)
+        with self.db.cursor() as cursor:
+            exist = cursor.execute(command)
+            print(exist)
+            return num2bool.get(exist)
 
     def close(self):
         ''' Close the database object.'''

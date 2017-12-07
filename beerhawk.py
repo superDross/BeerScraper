@@ -20,8 +20,8 @@ class BeerHawkProduct(object):
         self.brewery = self._get_brewery_name()
         self.beer_name = self._get_beer_name()
         self.dict = self.extract_beer_specs()
-        self.abv = self.dict.get('ABV')
-        self.bottle_size = self.dict.get('Bottle Size')
+        self.abv = float(self.dict.get('ABV').replace("%", ''))
+        self.bottle_size = int(self.dict.get('Bottle Size').replace('ml', ''))
         self.country_origin = self.dict.get('Country')
         self.serving_temp = self.dict.get('Serving Temp')
         self.beer_style = self.dict.get('Style')
@@ -36,6 +36,7 @@ class BeerHawkProduct(object):
             price_span = self.product.find('span', {'class': 'old-price'})
         if price_span:
             price = price_span.text.replace('\n', '')
+            price = float(price.replace("£", ''))
         else:
             price = None
         return price
