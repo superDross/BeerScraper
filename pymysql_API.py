@@ -50,7 +50,7 @@ class DataBase(object):
                 i = str(i)
             elif i is None:
                 i = 'NULL'
-            else:
+            elif isinstance(i, str):
                 i = "'{}'".format(i.replace("'", "").replace('"', ''))
             items.append(i)
         items = ', '.join(items)

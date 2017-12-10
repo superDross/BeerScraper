@@ -41,6 +41,9 @@ def clean_beer_dict(dictionary):
     combined_beer_info = decode_dict_items(dictionary)
     combined_beer_info.pop('description', None)
     combined_beer_info.pop('tags', None)
+    # don't want brewery objects
+    combined_beer_info.pop('brewery', None)
+    combined_beer_info.pop('brewed_at', None)
     return combined_beer_info
 
 
