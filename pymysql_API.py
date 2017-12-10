@@ -51,7 +51,7 @@ class DataBase(object):
             elif i is None:
                 i = 'NULL'
             else:
-                i = "'{}'".format(i)
+                i = "'{}'".format(i.replace("'", "").replace('"', ''))
             items.append(i)
         items = ', '.join(items)
         sql_cmd = 'INSERT INTO {} ({}) VALUES ({})'.format(table, keys, items)
