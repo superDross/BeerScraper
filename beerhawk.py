@@ -25,6 +25,7 @@ class BeerHawkProduct(object):
         self.country_origin = self.dict.get('Country')
         self.serving_temp = self.dict.get('Serving Temp')
         self.beer_style = self.dict.get('Style')
+        self.full_beer_name = '{} {}'.format(self.brewery, self.beer_name)
         # Attributes no longer needed are deleted
         del self.dict
         del self.product
@@ -42,13 +43,15 @@ class BeerHawkProduct(object):
         return price
 
     def _get_brewery_name(self):
-        beer_split = self.beer_link.replace("/", '').split("-")
+        beer_split = self.beer_link.replace(
+            "/", '').replace('brewery-', '').split("-")
         # the indexing here is quite presumptious
         brewery = beer_split[0].title()
         return brewery
 
     def _get_beer_name(self):
-        beer_split = self.beer_link.replace("/", '').split("-")
+        beer_split = self.beer_link.replace(
+            "/", '').replace('brewery-', '').split("-")
         if len(beer_split[1:]) == 1:
             beer_name = beer_split[1:][0].title()
         else:

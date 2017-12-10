@@ -1,5 +1,6 @@
 # https://www.tutorialspoint.com/python3/python_database_access.htm
 from tabulate import tabulate
+import logging
 import pandas as pd
 import collections
 import sys
@@ -31,6 +32,8 @@ class DataBase(object):
                 self.db.commit()
             except Exception as e:
                 print('ERROR: {}'.format(e))
+                print(command)
+                logging.exception('message')
                 self.db.rollback()
                 self.close()
                 sys.exit()

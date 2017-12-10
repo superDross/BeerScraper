@@ -1,6 +1,7 @@
 ''' Functions to query ratebeer.com'''
 from fuzzywuzzy import fuzz
 import custom_exceptions
+import logging
 import ratebeer
 import time
 
@@ -74,8 +75,10 @@ def get_info_dict(query, choice):
             return beer
         else:
             print('WARNING: no {} info for {}'.format(choice, query))
+            logging.warning('no {} info for {}'.format(choice, query))
     except ratebeer.rb_exceptions.PageNotFound:
         print('WARNING: no {} info for {}'.format(choice, query))
+        logging.warning('no {} info for {}'.format(choice, query))
 
 
 #
