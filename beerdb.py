@@ -72,6 +72,9 @@ def get_all_beer_features(beer):
         features1 = filter_dict(beer_data, features)
         style_features = ['abvMin', 'abvMax', 'fgMin',
                           'fgMax', 'ibuMin', 'ibuMax', 'name']
-        features2 = filter_dict(beer_data.get('style'), style_features)
-        beer_features = {**features1, **features2}
-        return beer_features
+        if beer_data.get('style'):
+            features2 = filter_dict(beer_data.get('style'), style_features)
+            beer_features = {**features1, **features2}
+            return beer_features
+        else:
+            return features1

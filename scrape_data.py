@@ -2,6 +2,7 @@ from beerhawk import BeerHawkProduct
 from pymysql_API import SQLTable
 from rate_beer import get_info_dict
 from beerdb import get_all_beer_features
+from datetime import datetime
 import custom_exceptions
 import logging
 import pymysql
@@ -15,7 +16,8 @@ def intiate_logger():
     logging.getLogger().addHandler(logging.StreamHandler())
     # ignores non-critical logging from urllib3 library
     logging.getLogger('urllib3').setLevel(logging.CRITICAL)
-    logging.info('Logger Intiated')
+    now = datetime.now().strftime('%d/%m/%y %H:%M:%S')
+    logging.info('Logger Intiated: {}'.format(now))
 
 
 def create_table(db):
@@ -140,6 +142,7 @@ def scrape_all_products_info():
         except custom_exceptions.NonBeerProduct as e:
             logging.warning(
                 'SKIPPING: detected non-beer product {}'.format(e.product))
+            # logging.exception('message')
             continue
 
 

@@ -21,7 +21,7 @@ class BeerHawkProduct(object):
         self.brewery = self._get_brewery_name()
         self.beer_name = self._get_beer_name()
         self.dict = self.extract_beer_specs()
-        self.abv = float(self.dict.get('ABV').replace("%", ''))
+        self.abv = self._abv(self.dict.get('ABV'))
         self.bottle_size = self._volume_corrector(self.dict.get('Bottle Size'))
         self.country_origin = self.dict.get('Country')
         self.serving_temp = self.dict.get('Serving Temp')
@@ -71,6 +71,12 @@ class BeerHawkProduct(object):
         vol = int(vol)
         return vol
 
+    def _abv(self, abv):
+        if abv == 'No':
+            return None
+        else:
+            return float(abv.replace("%", ""))
+
     @staticmethod
     def table2dict(table):
         ''' Converts a HTML table to a dict {col: row}.'''
@@ -92,6 +98,8 @@ class BeerHawkProduct(object):
             beer_specs = beer_page.find(
                 'table', id='product-attribute-specs-table')
             spec_dict = self.table2dict(beer_specs)
+            if spec_dict.get('Style').lower() == 'gifts':
+                raise custom_exceptions.NonBeerProduct(self.beer_link)
             return spec_dict
         except AttributeError:
             msg = '{} does not contain a product spec table'
