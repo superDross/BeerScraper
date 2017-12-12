@@ -1,3 +1,4 @@
+import custom_exceptions
 import requests
 import bs4
 
@@ -73,10 +74,16 @@ class BeerHawkProduct(object):
     def extract_beer_specs(self):
         ''' Extract beer specs from the given product sublink HTML table.'''
         beer_page = self.get_url_text(self.beer_hawk + self.beer_link)
-        beer_specs = beer_page.find(
-            'table', id='product-attribute-specs-table')
-        spec_dict = self.table2dict(beer_specs)
-        return spec_dict
+        if 'gift' in beer_page.find('title').text.lower():
+            raise custom_exceptions.NonBeerProduct(self.beer_link)
+        try:
+            beer_specs = beer_page.find(
+                'table', id='product-attribute-specs-table')
+            spec_dict = self.table2dict(beer_specs)
+            return spec_dict
+        except AttributeError:
+            msg = '{} does not contain a product spec table'
+            raise custom_exceptions(self.beer_link, msg.format(self.beer_link))
 
     @staticmethod
     def get_url_text(link):

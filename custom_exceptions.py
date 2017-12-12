@@ -13,3 +13,14 @@ class InvalidChoice(Exception):
         self.choice = choice
         self.valid_choices = valid_choices
         self.msg = msg
+
+
+class NonBeerProduct(Exception):
+    ''' Raise if a product is not a beer.'''
+
+    def __init__(self, product, msg=None):
+        if not msg:
+            msg = '{} is not a beer product'.format(product)
+        Exception.__init__(self, msg)
+        self.product = product
+        self.msg = msg
