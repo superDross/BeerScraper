@@ -10,8 +10,11 @@ RB = ratebeer.RateBeer()
 
 def query_ratebeer(query):
     ''' Search ratebeer for a given query.'''
-    results = RB.search(query)
-    return results
+    try:
+        results = RB.search(query)
+        return results
+    except AttributeError as e:
+        raise custom_exceptions.RateBeerModuleFailure(e)
 
 
 def fuzzy_query_match(query, beers):
@@ -41,6 +44,7 @@ def fetch_data(data, key):
         data: ratebeer search results
         key: 'beers' or 'breweries'
     '''
+    # ensure at least 1 second between requests to ratebeer
     time.sleep(1)
     check_choice_error(key)
     breweries = data.get(key)
@@ -49,8 +53,13 @@ def fetch_data(data, key):
         func = RB.get_beer if key == 'beers' else RB.get_brewery
         for x in breweries:
             # fetch boolean required to ensure all data is obtained
-            brewery = func(x.url, fetch=True)
-            fetched_data.append(brewery)
+            try:
+                brewery = func(x.url, fetch=True)
+            except ratebeer.rb_exceptions.AliasedBeer as e:
+                time.sleep(1)
+                brewery = func(e.newurl, fetch=True)
+            finally:
+                fetched_data.append(brewery)
     return fetched_data
 
 
@@ -64,7 +73,6 @@ def get_info_dict(query, choice):
     try:
         check_choice_error(choice)
         search_results = query_ratebeer(query)
-        # ensure at least 1 second between requests to ratebeer
         beers = fetch_data(search_results, choice)
         if beers:
             if len(beers) > 1 or not all(x.name is None for x in beers):
@@ -74,11 +82,9 @@ def get_info_dict(query, choice):
             beer = beer_match.__dict__
             return beer
         else:
-            print('WARNING: no {} info for {}'.format(choice, query))
-            logging.warning('no {} info for {}'.format(choice, query))
+            logging.warning('No {} info for {} in RateBeer'.format(choice, query))
     except ratebeer.rb_exceptions.PageNotFound:
-        print('WARNING: no {} info for {}'.format(choice, query))
-        logging.warning('no {} info for {}'.format(choice, query))
+        logging.warning('No {} info for {} in RateBeer'.format(choice, query))
 
 
 #

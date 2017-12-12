@@ -30,8 +30,6 @@ class DataBase(object):
                 cursor.execute(command)
                 self.db.commit()
             except Exception as e:
-                print('ERROR: {}'.format(e))
-                print(command)
                 logging.exception('message')
                 self.db.rollback()
                 self.close()
@@ -51,6 +49,13 @@ class SQLTable(DataBase):
     def __init__(self, db, table):
         DataBase.__init__(self, db)
         self.table = table
+        self._valid_table()
+
+    def _valid_table(self):
+        ''' Raise an exception if table doesn't exist.'''
+        command = "SELECT * FROM {}".format(self.table)
+        with self.db.cursor() as cursor:
+            cursor.execute(command)
 
     def dict2cmd(self, dictionary):
         ''' Construct a INSERT SQL command from a dict and execute the command.
@@ -69,7 +74,7 @@ class SQLTable(DataBase):
             items.append(i)
         items = ', '.join(items)
         sql_cmd = 'INSERT INTO {} ({}) VALUES ({})'.format(
-                      self.table, keys, items)
+            self.table, keys, items)
         self.cmd(sql_cmd)
 
     def print(self, command):
