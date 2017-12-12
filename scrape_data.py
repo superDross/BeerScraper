@@ -1,5 +1,5 @@
 from beerhawk import BeerHawkProduct
-from pymysql_API import DataBase
+from pymysql_API import SQLTable
 from rate_beer import get_info_dict
 from beerdb import get_all_beer_features
 import custom_exceptions
@@ -9,13 +9,13 @@ import unidecode
 import re
 
 
-def open_database():
+def open_database_table():
     ''' Open the beers database object and return.'''
     db = pymysql.connect(host='localhost', user='root',
                          password='Strokes_01!', db='beers',
                          use_unicode=True, charset='utf8')
-    beer_db = DataBase(db)
-    return beer_db
+    table = SQLTable(db, 'CRAFT_BEERS')
+    return table
 
 
 def get_all_beerhawk_products():
@@ -54,8 +54,8 @@ def scrape_all_products_info():
     '''
     logging.basicConfig(filename='beerscraper.log', level=logging.DEBUG)
     logging.info('Intiated')
-    beer_db = open_database()
-    for product in get_all_beerhawk_products()[6:]:
+    table = open_database_table()
+    for product in get_all_beerhawk_products()[300:]:
         try:
             print('------------------')
             print('scraping beerhawk')
@@ -64,8 +64,7 @@ def scrape_all_products_info():
             logging.info('processing {}'.format(beer.full_beer_name))
             print('PROCESSING: {} (beer: {}, brewery: {})'.format(
                 beer.full_beer_name, beer.beer_name, beer.brewery))
-            exists = beer_db.exists('CRAFT_BEERS', 'full_beer_name',
-                                    beer.full_beer_name)
+            exists = table.exists('full_beer_name', beer.full_beer_name)
             if not exists:
                 print('scraping beerdb')
                 logging.info('scraping beerdb')
@@ -92,7 +91,7 @@ def scrape_all_products_info():
                 combined_beer_info = clean_beer_dict(scrapped_data)
                 print('adding to database')
                 logging.info('adding to database')
-                beer_db.dict2cmd(combined_beer_info, 'CRAFT_BEERS')
+                table.dict2cmd(combined_beer_info)
             else:
                 msg = 'SKIPPING: {} already present in the database'
                 print(msg.format(beer.full_beer_name))
