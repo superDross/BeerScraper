@@ -24,3 +24,11 @@ class NonBeerProduct(Exception):
         Exception.__init__(self, msg)
         self.product = product
         self.msg = msg
+
+
+class RateBeerModuleFailure(Exception):
+    ''' An error in ratebeer python module stops'''
+
+    def __init__(self, error):
+        Exception.__init__(self, error)
+        self.error = error

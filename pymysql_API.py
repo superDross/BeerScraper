@@ -6,7 +6,6 @@ import collections
 import sys
 
 
-# create a Table class which inherits from DataBase
 class DataBase(object):
     ''' Represents a mySQL database.
 
@@ -16,8 +15,8 @@ class DataBase(object):
     Example:
         db = pymysql.connect(host='localhost', user='root',
                              password='pass', db='beers')
-        sql = "INSERT INTO BEERS (NAME) VALUES ('Test Beer')"
         beers = DataBase(db)
+        sql = "INSERT INTO BEERS (NAME) VALUES ('Test Beer')"
         beers.cmd(sql)
     '''
 
@@ -33,7 +32,6 @@ class DataBase(object):
             except Exception as e:
                 print('ERROR: {}'.format(e))
                 print(command)
-                # beneath this perhaps better in a finally block
                 logging.exception('message')
                 self.db.rollback()
                 self.close()
@@ -64,13 +62,14 @@ class SQLTable(DataBase):
         for k, i in dictionary.items():
             if isinstance(i, int) or isinstance(i, float):
                 i = str(i)
-            elif i is None:
+            elif not i:
                 i = 'NULL'
             elif isinstance(i, str):
                 i = "'{}'".format(i.replace("'", "").replace('"', ''))
             items.append(i)
         items = ', '.join(items)
-        sql_cmd = 'INSERT INTO {} ({}) VALUES ({})'.format(self.table, keys, items)
+        sql_cmd = 'INSERT INTO {} ({}) VALUES ({})'.format(
+                      self.table, keys, items)
         self.cmd(sql_cmd)
 
     def print(self, command):

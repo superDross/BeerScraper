@@ -4,7 +4,7 @@ import bs4
 
 
 class BeerHawkProduct(object):
-    ''' Container for product details scrapped from beer hawk.
+    ''' Container for beer product details scrapped from beer hawk.
 
     Parameters:
         product: div element (id=product*) from beerhawk browse-beer page
@@ -22,7 +22,7 @@ class BeerHawkProduct(object):
         self.beer_name = self._get_beer_name()
         self.dict = self.extract_beer_specs()
         self.abv = float(self.dict.get('ABV').replace("%", ''))
-        self.bottle_size = int(self.dict.get('Bottle Size').replace('ml', ''))
+        self.bottle_size = self._volume_corrector(self.dict.get('Bottle Size'))
         self.country_origin = self.dict.get('Country')
         self.serving_temp = self.dict.get('Serving Temp')
         self.beer_style = self.dict.get('Style')
@@ -57,7 +57,17 @@ class BeerHawkProduct(object):
             beer_name = beer_split[1:][0].title()
         else:
             beer_name = ' '.join(beer_split[1:]).title()
-        return beer_name
+        return beer_name.replace(' Can', '')
+
+    def _volume_corrector(self, vol):
+        if vol == 'No':
+            return None
+        vol = vol.replace('ml', '')
+        if 'L' in vol:
+            vol = vol.replace('L', '')
+            vol = vol+'000'
+        vol = int(vol)
+        return vol
 
     @staticmethod
     def table2dict(table):
@@ -83,7 +93,8 @@ class BeerHawkProduct(object):
             return spec_dict
         except AttributeError:
             msg = '{} does not contain a product spec table'
-            raise custom_exceptions(self.beer_link, msg.format(self.beer_link))
+            raise custom_exceptions.NonBeerProduct(
+                    self.beer_link, msg.format(self.beer_link))
 
     @staticmethod
     def get_url_text(link):

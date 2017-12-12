@@ -1,4 +1,4 @@
-''' Scrapers functions to extract information from the BeerDB.'''
+''' Scrapers functions to extract information from the BreweryDB.'''
 import APIkeys
 import requests
 import json
@@ -8,15 +8,6 @@ import json
 # brewaries = get_data_request(r, key).get('data')
 
 KEY = APIkeys.keys.get('BreweryDB')
-
-
-class BeerDB_beer(object):
-    ''' beer_dict = get_all_beer_features('Punk IPA')
-        beer = BeerDB_beer(**beer_dict)
-    '''
-
-    def __init__(self, **args):
-        self.__dict__.update(args)
 
 
 def get_json_data(link):
@@ -71,7 +62,7 @@ def filter_dict(dictionary, keys):
 
 def get_all_beer_features(beer):
     ''' Extract all features of interest for a given beer
-        from BeerDB and return as a dict.
+        from BreweryDB and return as a dict.
     '''
     beer_data = get_beer_data(beer).get('data')
     if beer_data:

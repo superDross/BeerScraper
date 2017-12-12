@@ -55,7 +55,7 @@ def scrape_all_products_info():
     logging.basicConfig(filename='beerscraper.log', level=logging.DEBUG)
     logging.info('Intiated')
     table = open_database_table()
-    for product in get_all_beerhawk_products()[300:]:
+    for product in get_all_beerhawk_products():
         try:
             print('------------------')
             print('scraping beerhawk')
