@@ -7,7 +7,7 @@ import json
 # r = 'locations?region=Scotland&locality=edinburgh'
 # brewaries = get_data_request(r, key).get('data')
 
-KEY = APIkeys.keys.get('BreweryDB')
+KEY = APIkeys.keys.get('BreweryDB2')
 
 
 def get_json_data(link):

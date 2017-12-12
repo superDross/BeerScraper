@@ -52,12 +52,12 @@ def fetch_data(data, key):
     if breweries:
         func = RB.get_beer if key == 'beers' else RB.get_brewery
         for x in breweries:
-            # fetch boolean required to ensure all data is obtained
             try:
+                # fetch boolean required to ensure all data is obtained
                 brewery = func(x.url, fetch=True)
             except ratebeer.rb_exceptions.AliasedBeer as e:
                 time.sleep(1)
-                brewery = func(e.newurl, fetch=True)
+                brewery = func(e.oldurl, fetch=True)
             finally:
                 fetched_data.append(brewery)
     return fetched_data
