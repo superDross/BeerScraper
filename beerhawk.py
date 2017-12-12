@@ -53,7 +53,9 @@ class BeerHawkProduct(object):
     def _get_beer_name(self):
         beer_split = self.beer_link.replace(
             "/", '').replace('brewery-', '').split("-")
-        if len(beer_split[1:]) == 1:
+        if len(beer_split) == 1:
+            beer_name = beer_split[0].title()
+        elif len(beer_split[1:]) == 1:
             beer_name = beer_split[1:][0].title()
         else:
             beer_name = ' '.join(beer_split[1:]).title()
@@ -65,7 +67,7 @@ class BeerHawkProduct(object):
         vol = vol.replace('ml', '')
         if 'L' in vol:
             vol = vol.replace('L', '')
-            vol = vol+'000'
+            vol = vol + '000'
         vol = int(vol)
         return vol
 
@@ -94,7 +96,7 @@ class BeerHawkProduct(object):
         except AttributeError:
             msg = '{} does not contain a product spec table'
             raise custom_exceptions.NonBeerProduct(
-                    self.beer_link, msg.format(self.beer_link))
+                self.beer_link, msg.format(self.beer_link))
 
     @staticmethod
     def get_url_text(link):
