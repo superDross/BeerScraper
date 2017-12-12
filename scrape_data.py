@@ -2,6 +2,7 @@ from beerhawk import BeerHawkProduct
 from pymysql_API import DataBase
 from rate_beer import get_info_dict
 from beerdb import get_all_beer_features
+import custom_exceptions
 import logging
 import pymysql
 import unidecode
@@ -42,7 +43,6 @@ def clean_beer_dict(dictionary):
     combined_beer_info.pop('description', None)
     combined_beer_info.pop('tags', None)
     # don't want brewery objects
-    combined_beer_info.pop('brewery', None)
     combined_beer_info.pop('brewed_at', None)
     return combined_beer_info
 
@@ -56,42 +56,50 @@ def scrape_all_products_info():
     logging.info('Intiated')
     beer_db = open_database()
     for product in get_all_beerhawk_products()[6:]:
-        print('scraping beerhawk')
-        logging.info('scraping beerhawk')
-        beer = BeerHawkProduct(product)
-        logging.info('processing {}'.format(beer.full_beer_name))
-        print('PROCESSING: {} (beer: {}, brewery: {})'.format(
-            beer.full_beer_name, beer.beer_name, beer.brewery))
-        exists = beer_db.exists('CRAFT_BEERS', 'full_beer_name',
-                                beer.full_beer_name)
-        if not exists:
-            print('scraping beerdb')
-            logging.info('scraping beerdb')
-            beerdb_info = get_all_beer_features(beer.beer_name)
-            if not beerdb_info:
-                beerdb_info = get_all_beer_features(beer.full_beer_name)
+        try:
+            print('------------------')
+            print('scraping beerhawk')
+            logging.info('scraping beerhawk')
+            beer = BeerHawkProduct(product)
+            logging.info('processing {}'.format(beer.full_beer_name))
+            print('PROCESSING: {} (beer: {}, brewery: {})'.format(
+                beer.full_beer_name, beer.beer_name, beer.brewery))
+            exists = beer_db.exists('CRAFT_BEERS', 'full_beer_name',
+                                    beer.full_beer_name)
+            if not exists:
+                print('scraping beerdb')
+                logging.info('scraping beerdb')
+                beerdb_info = get_all_beer_features(beer.beer_name)
                 if not beerdb_info:
-                    print('No info found in beerdb for {}'.format(
+                    beerdb_info = get_all_beer_features(beer.full_beer_name)
+                    if not beerdb_info:
+                        print('No info found in beerdb for {}'.format(
+                            beer.full_beer_name))
+                        beerdb_info = {}
+                # print(beerdb_info)
+                print('scraping ratebeer')
+                logging.info('scrapping ratebeer')
+                ratebeer_info = get_info_dict(beer.beer_name, 'beers')
+                if not ratebeer_info:
+                    print('No info found in rate beer for {}'.format(
                         beer.full_beer_name))
-                    beerdb_info = {}
-            # print(beerdb_info)
-            print('scraping ratebeer')
-            logging.info('scrapping ratebeer')
-            ratebeer_info = get_info_dict(beer.beer_name, 'beers')
-            if not ratebeer_info:
-                print('No info found in rate beer for {}'.format(
-                    beer.full_beer_name))
-                ratebeer_info = {}
-            # print(ratebeer_info)
-            scrapped_data = {**beerdb_info, **ratebeer_info, **beer.__dict__}
-            combined_beer_info = clean_beer_dict(scrapped_data)
-            print('adding to database')
-            logging.info('adding to database')
-            beer_db.dict2cmd(combined_beer_info, 'CRAFT_BEERS')
-        else:
-            msg = 'SKIPPING: {} already present in the database'
-            print(msg.format(beer.full_beer_name))
-            logging.info(msg.format(beer.full_beer_name))
+                    ratebeer_info = {}
+                else:
+                    # don't want brewery objects
+                    ratebeer_info.pop('brewery', None)
+                # print(ratebeer_info)
+                scrapped_data = {**beerdb_info, **ratebeer_info, **beer.__dict__}
+                combined_beer_info = clean_beer_dict(scrapped_data)
+                print('adding to database')
+                logging.info('adding to database')
+                beer_db.dict2cmd(combined_beer_info, 'CRAFT_BEERS')
+            else:
+                msg = 'SKIPPING: {} already present in the database'
+                print(msg.format(beer.full_beer_name))
+                logging.info(msg.format(beer.full_beer_name))
+        except custom_exceptions.NonBeerProduct as e:
+            print('\n\nSKIPPING: detected non-beer product {}\n\n\n'.format(e.product))
+            continue
 
 
 if __name__ == '__main__':
