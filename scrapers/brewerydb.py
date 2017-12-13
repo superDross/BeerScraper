@@ -1,5 +1,5 @@
 ''' Scrapers functions to extract information from the BreweryDB.'''
-import APIkeys
+import scrapers.APIkeys
 import requests
 import json
 
@@ -7,7 +7,7 @@ import json
 # r = 'locations?region=Scotland&locality=edinburgh'
 # brewaries = get_data_request(r, key).get('data')
 
-KEYS = APIkeys.keys.get('BreweryDB')
+KEYS = scrapers.APIkeys.keys.get('BreweryDB')
 
 
 def get_json_data(link):

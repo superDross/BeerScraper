@@ -88,6 +88,13 @@ class SQLTable(DataBase):
             table = tabulate(tupled_table, column_names)
             print(table)
 
+    def column2list(self, column):
+        ''' Return all values in a given column as a list.'''
+        with self.db.cursor() as cursor:
+            cursor.execute('SELECT {} FROM {}'.format(column, self.table))
+            column_values = [x[0] for x in cursor.fetchall()]
+            return column_values
+
     def exists(self, column, query):
         ''' Checks if a query is present within a given table
             column. Returns a Boolean.
