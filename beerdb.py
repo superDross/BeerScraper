@@ -1,13 +1,14 @@
 ''' Scrapers functions to extract information from the BreweryDB.'''
 import APIkeys
 import requests
+import logging
 import json
 
 # Below example gets all beer from Edinburgh, Scotland.
 # r = 'locations?region=Scotland&locality=edinburgh'
 # brewaries = get_data_request(r, key).get('data')
 
-KEY = APIkeys.keys.get('BreweryDB2')
+KEYS = APIkeys.keys.get('BreweryDB')
 
 
 def get_json_data(link):
@@ -18,10 +19,17 @@ def get_json_data(link):
     return data
 
 
-def get_data_request(request):
-    db = 'https://api.brewerydb.com/v2/'
-    data = get_json_data('{}{}&key={}'.format(db, request, KEY))
-    return data
+def get_data_request(request, key_num=0):
+    try:
+        db = 'https://api.brewerydb.com/v2/'
+        data = get_json_data('{}{}&key={}'.format(db, request, KEYS[key_num]))
+        return data
+    except requests.exceptions.HTTPError as e:
+        # logging.warning(
+        #     'Cannot access BreweryDB with API key {}'.format(KEYS[key_num]))
+        key_num += 1
+        # logging.info('Attempting access with API key {}'.format(KEYS[key_num]))
+        return get_data_request(request, key_num)
 
 
 def get_brewery_data(brewery):
