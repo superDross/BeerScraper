@@ -53,12 +53,10 @@ def fetch_data(data, key):
         func = RB.get_beer if key == 'beers' else RB.get_brewery
         for x in breweries:
             try:
-                # fetch boolean required to ensure all data is obtained
+                # fetch boolean required to ensure all
+                # beer metadata is obtained
                 brewery = func(x.url, fetch=True)
             except ratebeer.rb_exceptions.AliasedBeer as e:
-                # time.sleep(1)
-                # print(x.url, e.oldurl)
-                # brewery = func(e.oldurl, fetch=True)
                 continue
             fetched_data.append(brewery)
     return fetched_data
@@ -83,7 +81,8 @@ def get_info_dict(query, choice):
             beer = beer_match.__dict__
             return beer
         else:
-            logging.warning('No {} info for {} in RateBeer'.format(choice, query))
+            logging.warning(
+                'No {} info for {} in RateBeer'.format(choice, query))
     except ratebeer.rb_exceptions.PageNotFound:
         logging.warning('No {} info for {} in RateBeer'.format(choice, query))
 

@@ -1,8 +1,8 @@
 from beerhawk import BeerHawkProduct
 from pymysql_API import SQLTable
 from rate_beer import get_info_dict
-from beerdb import get_all_beer_features
 from datetime import datetime
+import brewerydb
 import custom_exceptions
 import logging
 import pymysql
@@ -22,7 +22,7 @@ def intiate_logger():
 
 def create_table(db):
     ''' Create CRAFT_BEERS table in beers mySQL database.'''
-    cmd = "CREATE TABLE CRAFT_BEERS(abv INT, abvMax INT, abvMin INT, beer_hawk VARCHAR(100), beer_link VARCHAR(100), full_beer_name VARCHAR(200) NOT NULL PRIMARY KEY, beer_name VARCHAR(100) NOT NULL, beer_style VARCHAR(25), bottle_size INT, brand_category VARCHAR(50), brewed_at VARCHAR(50), brewery VARCHAR(100), calories INT, country_origin VARCHAR(50), customer_rating FLOAT, fgMax FLOAT, fgMin FLOAT, ibu FLOAT, ibuMax FLOAT, ibuMin FLOAT, img_url VARCHAR(200), isOrganic VARCHAR(5), mean_rating FLOAT, name VARCHAR(200), num_ratings INT, overall_rating FLOAT, price FLOAT, retired VARCHAR(10), seasonal VARCHAR(20), serving_temp VARCHAR(20), sku VARCHAR(20), srm INT, style VARCHAR(50), style_rating INT, style_url VARCHAR(100), url VARCHAR(200), weighted_avg FLOAT, _has_fetched VARCHAR(10))"
+    cmd = "CREATE TABLE CRAFT_BEERS(abv INT, abvMax INT, abvMin INT, beer_hawk VARCHAR(100), beer_link VARCHAR(100), full_beer_name VARCHAR(200) NOT NULL PRIMARY KEY, beer_name VARCHAR(100) NOT NULL, beer_style VARCHAR(25), bottle_size INT, brand_category VARCHAR(50), brewed_at VARCHAR(50), brewery VARCHAR(100), calories INT, country_origin VARCHAR(50), customer_rating FLOAT, fgMax FLOAT, fgMin FLOAT, ibu FLOAT, ibuMax FLOAT, ibuMin FLOAT, img_url VARCHAR(200), isOrganic VARCHAR(5), mean_rating FLOAT, name VARCHAR(200), num_ratings INT, overall_rating FLOAT, price FLOAT, retired VARCHAR(10), seasonal VARCHAR(20), serving_temp VARCHAR(200), sku VARCHAR(20), srm INT, style VARCHAR(50), style_rating INT, style_url VARCHAR(100), url VARCHAR(200), weighted_avg FLOAT, _has_fetched VARCHAR(10))"
     db.cursor().execute(cmd)
 
 
@@ -44,7 +44,6 @@ def open_database_table():
                              use_unicode=True, charset='utf8')
         table = SQLTable(db, 'CRAFT_BEERS')
         return table
-
     except pymysql.err.InternalError as e:
         logging.info('Database beers does not exist. Creating...')
         create_database()
@@ -94,10 +93,10 @@ def get_beerhawk_product(product):
 def scrape_brewerydb(beer):
     ''' Scrape BreweryDB for a parsed BeerHawkProduct.'''
     logging.info('SCRAPING: BreweryDB....')
-    brewerydb_info = get_all_beer_features(beer.full_beer_name)
+    brewerydb_info = brewerydb.get_all_beer_features(beer.beer_name, beer.brewery)
     if not brewerydb_info:
-        logging.warning('MISSING: No info found in BreweryDB for {}'.format(
-            beer.full_beer_name))
+        msg = 'MISSING: {} not found in {} beer catalog'
+        logging.warning(msg.format(beer.beer_name, beer.brewery))
         brewerydb_info = {}
     return brewerydb_info
 
@@ -116,9 +115,19 @@ def scrape_ratebeer(beer):
     return ratebeer_info
 
 
+def scrape_all_databases(beer):
+    ''' Search and scrape BreweryDB and RateBeer for the parsed beer.'''
+    brewerydb_info = scrape_brewerydb(beer)
+    ratebeer_info = scrape_ratebeer(beer)
+    scrapped_data = {**brewerydb_info, **
+                     ratebeer_info, **beer.__dict__}
+    combined_beer_info = clean_beer_dict(scrapped_data)
+    return combined_beer_info
+
+
 def scrape_all_products_info():
     ''' Scrape all beer hawk products information from
-        beerhawk, beerdb & ratebeer and insert it into
+        beerhawk, brewerydb & ratebeer and insert it into
         a MySQL database tabel.
     '''
     intiate_logger()
@@ -128,11 +137,7 @@ def scrape_all_products_info():
             beer = get_beerhawk_product(product)
             exists = table.exists('full_beer_name', beer.full_beer_name)
             if not exists:
-                brewerydb_info = scrape_brewerydb(beer)
-                ratebeer_info = scrape_ratebeer(beer)
-                scrapped_data = {**brewerydb_info, **
-                                 ratebeer_info, **beer.__dict__}
-                combined_beer_info = clean_beer_dict(scrapped_data)
+                combined_beer_info = scrape_all_databases(beer)
                 logging.info('ADDING: {} to database table'.format(
                     beer.full_beer_name))
                 table.dict2cmd(combined_beer_info)

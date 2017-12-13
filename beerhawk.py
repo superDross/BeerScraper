@@ -1,3 +1,5 @@
+''' Classes used to scrape beer product information from BeerHawk website.'''
+from string import digits
 import custom_exceptions
 import requests
 import bs4
@@ -64,11 +66,9 @@ class BeerHawkProduct(object):
     def _volume_corrector(self, vol):
         if vol == 'No':
             return None
-        vol = vol.replace('ml', '')
         if 'L' in vol:
-            vol = vol.replace('L', '')
-            vol = vol + '000'
-        vol = int(vol)
+            vol = vol.replace('L', '000')
+        vol = int(''.join(x for x in vol if x in digits))
         return vol
 
     def _abv(self, abv):

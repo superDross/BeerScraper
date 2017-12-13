@@ -1,3 +1,4 @@
+''' Classes to ease the pain of interacting with mySQL DataBases and Tables.'''
 # https://www.tutorialspoint.com/python3/python_database_access.htm
 from tabulate import tabulate
 import logging
