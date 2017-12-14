@@ -1,4 +1,5 @@
 ''' Scrapers functions to extract information from the BreweryDB.'''
+from fuzzywuzzy import fuzz
 import scrapers.APIkeys
 import requests
 import json
@@ -33,6 +34,8 @@ def get_data_request(request, key_num=0):
 def get_beer_data(beer):
     ''' Get all JSON data for a given beer.'''
     r = 'beers?name={}'.format(beer)
+    # only returns search result if their is an exact match
+    # only premium users can use wildcards for searching
     search_results = get_data_request(r)
     return search_results
 
@@ -40,6 +43,8 @@ def get_beer_data(beer):
 def get_brewery_data(brewery):
     ''' Get all data for a given brewery name.'''
     r = 'breweries?name={}'.format(brewery)
+    # only returns search result if their is an exact match
+    # only premium users can use wildcards for searching
     search_results = get_data_request(r)
     if search_results.get('data'):
         # The index assumes only one brewery was returned from search query
@@ -57,18 +62,32 @@ def all_beers_from_brewery(brewery):
         return beers
 
 
+def fuzzy_query_match(query, beers, min_match=100):
+    ''' Find the best partial match between a
+        search query and beer name and return
+        the beer name if it meets the given
+        minimum partial match percentage.
+    '''
+    pr = []
+    all_beer_names = [x.get('name') for x in beers]
+    for beer in all_beer_names:
+        compare = fuzz.partial_ratio(query.lower(), beer.lower())
+        pr.append(compare)
+    if max(pr) >= min_match:
+        index = pr.index(max(pr))
+        best_match = beers[index]
+        return best_match
+
+
 def check_beer_in_brewery_catalog(beer, brewery):
-    ''' Determine whether a beer is within a brewery catalog.
+    ''' Determine whether a beer is within a brewery catalog
+        by using fuzzy partial matching against all brewery beers..
         Return beer JSON if True.
     '''
     brewery_beers = all_beers_from_brewery(brewery)
     if brewery_beers:
-        all_beer_names = {x.get('name').lower(): i for i,
-                          x in enumerate(brewery_beers)}
-        index = all_beer_names.get(beer.lower())
-        if index:
-            beer_data = brewery_beers[index]
-            return beer_data
+        beer_data = fuzzy_query_match(beer, brewery_beers)
+        return beer_data
 
 
 def filter_dict(dictionary, keys):
