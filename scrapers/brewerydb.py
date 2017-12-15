@@ -1,6 +1,7 @@
 ''' Scrapers functions to extract information from the BreweryDB.'''
 from fuzzywuzzy import fuzz
 import scrapers.APIkeys
+import logging
 import requests
 import json
 
@@ -62,19 +63,20 @@ def all_beers_from_brewery(brewery):
         return beers
 
 
-def fuzzy_query_match(query, beers, min_match=95):
-    ''' Find the best partial match between a
+def fuzzy_query_match(query, beers, min_match=75):
+    ''' Find the best simple fuzzy match between a
         search query and beer name and return
         the beer name if it meets the given
         minimum partial match percentage.
     '''
-    pr = []
+    sr = []
     all_beer_names = [x.get('name') for x in beers]
     for beer in all_beer_names:
-        compare = fuzz.partial_ratio(query.lower(), beer.lower())
-        pr.append(compare)
-    if max(pr) >= min_match:
-        index = pr.index(max(pr))
+        # simple ratio that doesnt care about the order of substrings
+        compare = fuzz.token_sort_ratio(query.lower(), beer.lower())
+        sr.append(compare)
+    if max(sr) >= min_match:
+        index = sr.index(max(sr))
         best_match = beers[index]
         return best_match
 
@@ -86,7 +88,9 @@ def check_beer_in_brewery_catalog(beer, brewery):
     '''
     brewery_beers = all_beers_from_brewery(brewery)
     if brewery_beers:
-        beer_data = fuzzy_query_match(beer, brewery_beers)
+        # remove brewery substrings from beer string
+        corrected_beer = ' '.join(set(beer.split(" ")) - set(brewery.split(" ")))
+        beer_data = fuzzy_query_match(corrected_beer, brewery_beers)
         return beer_data
 
 
@@ -105,6 +109,8 @@ def filter4data(beer_data):
     ''' Filter the JSON dict for features of interest and return.'''
     # The indexing maybe presumtious here
     beer_data = beer_data[0] if isinstance(beer_data, list) else beer_data
+    beer_name = beer_data.get('name')
+    logging.info('FOUND: inspecting beer {} fro features'.format(beer_name))
     features = ['ibu', 'isOrganic', 'abv', 'srm']
     features1 = filter_dict(beer_data, features)
     style_features = ['abvMin', 'abvMax', 'fgMin',
