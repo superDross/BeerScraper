@@ -29,7 +29,6 @@ class DataBase(object):
         ''' Parse a command to MySQL and commit it.'''
         with self.db.cursor() as cursor:
             try:
-                print(command)
                 cursor.execute(command)
                 self.db.commit()
             except Exception as e:
@@ -37,6 +36,88 @@ class DataBase(object):
                 self.db.rollback()
                 self.close()
                 sys.exit()
+
+
+class Dict2Command(object):
+    ''' Converts dictionary entries into mySQL commands and returns as a string.
+
+    Attributes:
+        self.dictionary = dict where keys are column in table, items are values.
+                          used as to change column values in a SQL table.
+        self.table = SQL table to apply the command to
+        self.command = command type e.g. insert, update etc.
+        self.where = a dict for WHERE command (key is column)
+
+    Example:
+        d = {'abv': 5, 'seasonal': 'N', 'srm': None}
+        where = {'full_beer_name': 'Brewdog Punk IPA',
+                 'brewery': 'Brewdog'}
+        cmd = Dict2Command(dictionary=d, table='CRAFT_BEERS',
+                           command='where', conditions=where)
+    Returns:
+        UPDATE CRAFT_BEERS SET abv = 5, seasonal = "N", srm = NULL
+        WHERE full_beer_name = "Brewdog Punk IPA", brewery = "Brewdog"
+        '''
+
+    def __init__(self, dictionary, table, command='insert', conditions=None):
+        self.dictionary = self._correct_items(dictionary)
+        self.table = table
+        self.command = command
+        self.conditions = self._correct_items(conditions) if conditions else None
+        self.funcs = {'insert': self._insert_cmd,
+                      'update': self._update_cmd}
+
+    def _key_equals_item_str(self, d):
+        equals = ['{} = {}'.format(k, i)
+                  for k, i in zip(d.keys(), d.values())]
+        return ', '.join(equals)
+
+    def _correct_items(self, dictionary):
+        dictionary = collections.OrderedDict(dictionary)
+        for k, i in dictionary.items():
+            if isinstance(i, int) or isinstance(i, float):
+                i = str(i)
+            elif not i:
+                i = 'NULL'
+            elif isinstance(i, str):
+                i = '"{}"'.format(i.replace("'", "").replace('"', ''))
+            dictionary[k] = i
+        return dictionary
+
+    def _update_cmd(self):
+        if not self.conditions:
+            raise TypeError('conditions argument required to'
+                            'construct an UPDATE command.')
+        set_str = self._key_equals_item_str(self.dictionary)
+        where_str = self._key_equals_item_str(self.conditions)
+        update_cmd = 'UPDATE {} '.format(self.table)
+        set_cmd = 'SET {}'.format(set_str)
+        where_cmd = 'WHERE {}'.format(where_str)
+        command = ' '.join([update_cmd, set_cmd, where_cmd])
+        return command
+
+    def _insert_cmd(self):
+        keys = ', '.join(self.dictionary.keys())
+        items = ', '.join(self.dictionary.values())
+        sql_cmd = 'INSERT INTO {} ({}) VALUES ({})'.format(
+            self.table, keys, items)
+        return sql_cmd
+
+    def _invalid_command(self):
+        ''' Raise InvalidChoice exception if command not in funcs dict.'''
+        msg = '{} is not a valid command argument. Only {} are valid.'
+        valid = ', '.join(self.funcs.keys())
+        msg = msg.format(self.command, valid)
+        raise custom_exceptions.InvalidChoice(
+            self.command, valid, msg)
+
+    def __str__(self):
+        ''' Returns SQL command after object intiation.'''
+        func = self.funcs.get(self.command.lower())
+        if not func:
+            self._invalid_command()
+        sql_cmd = func()
+        return sql_cmd
 
 
 class SQLTable(DataBase):
@@ -52,6 +133,9 @@ class SQLTable(DataBase):
     def __init__(self, db, table):
         DataBase.__init__(self, db)
         self.table = table
+        # keys, items filled during dict2cmd
+        self.keys = None
+        self.items = None
         self._valid_table()
 
     def _valid_table(self):
@@ -60,44 +144,13 @@ class SQLTable(DataBase):
         with self.db.cursor() as cursor:
             cursor.execute(command)
 
-    def dict2cmd(self, dictionary, command='insert'):
-        ''' Construct a INSERT/USE SQL command from a dict, where
+    def dict2cmd(self, dictionary, command='insert', conditions=None):
+        ''' Construct an SQL command from a dict, where
             the keys are column names in table and items are values.
         '''
-        funcs = {'insert': self._insert_cmd,
-                 'update': self._update_cmd}
-        dictionary = collections.OrderedDict(dictionary)
-        keys = [k for k, i in dictionary.items()]
-        items = []
-        for k, i in dictionary.items():
-            if isinstance(i, int) or isinstance(i, float):
-                i = str(i)
-            elif not i:
-                i = 'NULL'
-            elif isinstance(i, str):
-                i = "'{}'".format(i.replace("'", "").replace('"', ''))
-            items.append(i)
-        func = funcs.get(command)
-        if not func:
-            msg = '{} is not a valid command argument. Only {} are valid.'
-            valid = ', '.join(funcs.keys())
-            msg = msg.format(command, valid)
-            raise custom_exceptions.InvalidChoice(
-                command, valid, msg)
-        sql_cmd = func(keys, items)
-        return sql_cmd
-
-    def _update_cmd(self, keys, items):
-        equals = ['{} = {}'.format(k, i) for k, i in zip(keys, items)]
-        command = 'UPDATE {} SET '.format(self.table) + ', '.join(equals)
-        return command
-
-    def _insert_cmd(self, keys, items):
-        keys = ', '.join(keys)
-        items = ', '.join(items)
-        sql_cmd = 'INSERT INTO {} ({}) VALUES ({})'.format(
-            self.table, keys, items)
-        return sql_cmd
+        sql_cmd = Dict2Command(dictionary=dictionary, table=self.table,
+                               command=command, conditions=conditions)
+        return str(sql_cmd)
 
     def print(self, command):
         ''' Print the command.'''
