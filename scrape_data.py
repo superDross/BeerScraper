@@ -108,10 +108,14 @@ def update_brewerydb():
         if brewerydb_info:
             logging.info(
                 'ADDING: BreweryDB info for {} to the CRAFT_BEERS table'.format(beer))
-            base_command = table.dict2cmd(brewerydb_info, 'update')
-            condition = ' WHERE full_beer_name = "{}"'.format(beer)
-            update_command = base_command + condition
-            table.cmd(update_command)
+            # unwanted info (abv, name) excluded
+            brewerydb_info.pop('abv', None)
+            brewerydb_info.pop('name', None)
+            command = table.dict2cmd(dictionary=brewerydb_info,
+                                     command='update',
+                                     conditions={'full_beer_name': beer})
+            logging.info('SQL: {}'.format(command))
+            table.cmd(command)
 
 
 def scrape_all_products_info():
