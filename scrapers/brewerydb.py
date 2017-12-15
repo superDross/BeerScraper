@@ -63,7 +63,7 @@ def all_beers_from_brewery(brewery):
         return beers
 
 
-def fuzzy_query_match(query, beers, min_match=75):
+def fuzzy_query_match(query, beers, brewery, min_match=75):
     ''' Find the best simple fuzzy match between a
         search query and beer name and return
         the beer name if it meets the given
@@ -73,7 +73,8 @@ def fuzzy_query_match(query, beers, min_match=75):
     all_beer_names = [x.get('name') for x in beers]
     for beer in all_beer_names:
         # simple ratio that doesnt care about the order of substrings
-        compare = fuzz.token_sort_ratio(query.lower(), beer.lower())
+        corrected_beer = remove_brewery_name_from_beer(beer, brewery)
+        compare = fuzz.token_sort_ratio(query.lower(), corrected_beer)
         sr.append(compare)
     if max(sr) >= min_match:
         index = sr.index(max(sr))
@@ -88,10 +89,18 @@ def check_beer_in_brewery_catalog(beer, brewery):
     '''
     brewery_beers = all_beers_from_brewery(brewery)
     if brewery_beers:
-        # remove brewery substrings from beer string
-        corrected_beer = ' '.join(set(beer.split(" ")) - set(brewery.split(" ")))
-        beer_data = fuzzy_query_match(corrected_beer, brewery_beers)
+        corrected_beer = remove_brewery_name_from_beer(beer, brewery)
+        beer_data = fuzzy_query_match(corrected_beer, brewery_beers, brewery)
         return beer_data
+
+
+def remove_brewery_name_from_beer(beer, brewery):
+    ''' Remove brewery substring from beer string and
+        other unwnated substrings.
+    '''
+    corrected_beer = ' '.join(set(beer.split(" ")) - set(brewery.split(" ")))
+    corrected_beer = corrected_beer.replace('Beer', '')
+    return corrected_beer
 
 
 def filter_dict(dictionary, keys):
