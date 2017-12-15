@@ -6,6 +6,7 @@ import scrapers.brewerydb as brewerydb
 import custom_exceptions
 import logging
 import unidecode
+import argparse
 import re
 
 
@@ -57,14 +58,14 @@ def get_beerhawk_product(product):
     return beer
 
 
-def scrape_brewerydb(beer):
+def scrape_brewerydb(beer, brewery):
     ''' Scrape BreweryDB for a parsed BeerHawkProduct.'''
     logging.info('SCRAPING: BreweryDB....')
     brewerydb_info = brewerydb.get_all_beer_features(
-        beer.beer_name, beer.brewery)
+        beer, brewery)
     if not brewerydb_info:
         msg = 'MISSING: {} not found in {} beer catalog'
-        logging.warning(msg.format(beer.beer_name, beer.brewery))
+        logging.warning(msg.format(beer, brewery))
         brewerydb_info = {}
     return brewerydb_info
 
@@ -72,10 +73,10 @@ def scrape_brewerydb(beer):
 def scrape_ratebeer(beer):
     ''' Scrape RateBeer for a parsed BeerHawkProduct.'''
     logging.info('SCRAPING: RateBeer....')
-    ratebeer_info = get_info_dict(beer.full_beer_name, 'beers')
+    ratebeer_info = get_info_dict(beer, 'beers')
     if not ratebeer_info:
         logging.warning('MISSING: No info found in RateBeer for {}'.format(
-            beer.full_beer_name))
+            beer))
         ratebeer_info = {}
     else:
         # don't want brewery objects
@@ -85,12 +86,32 @@ def scrape_ratebeer(beer):
 
 def scrape_all_databases(beer):
     ''' Search and scrape BreweryDB and RateBeer for the parsed beer.'''
-    brewerydb_info = scrape_brewerydb(beer)
-    ratebeer_info = scrape_ratebeer(beer)
+    brewerydb_info = scrape_brewerydb(beer.beer_name, beer.brewery)
+    ratebeer_info = scrape_ratebeer(beer.full_beer_name)
     scrapped_data = {**brewerydb_info, **
                      ratebeer_info, **beer.__dict__}
     combined_beer_info = clean_beer_dict(scrapped_data)
     return combined_beer_info
+
+
+def update_brewerydb():
+    ''' Update BreweryDB entries in the CRAFT_BEERS table.'''
+    intiate_logger()
+    table = open_database_table()
+    beers = table.column2list('full_beer_name')
+    breweries = table.column2list('brewery')
+    logging.info('Updating BreweryDB entries in the CRAFT_BEER table')
+    for beer, brewery, in zip(beers, breweries):
+        logging.info('-' * 85 + '\nUPDATING: {}'.format(beer))
+        brewerydb_info = scrape_brewerydb(beer, brewery)
+        brewerydb_info = clean_beer_dict(brewerydb_info)
+        if brewerydb_info:
+            logging.info(
+                'ADDING: BreweryDB info for {} to the CRAFT_BEERS table'.format(beer))
+            base_command = table.dict2cmd(brewerydb_info, 'update')
+            condition = ' WHERE full_beer_name = "{}"'.format(beer)
+            update_command = base_command + condition
+            table.cmd(update_command)
 
 
 def scrape_all_products_info():
@@ -108,7 +129,8 @@ def scrape_all_products_info():
                 combined_beer_info = scrape_all_databases(beer)
                 logging.info('ADDING: {} to database table'.format(
                     beer.full_beer_name))
-                table.dict2cmd(combined_beer_info)
+                command = table.dict2cmd(combined_beer_info)
+                table.cmd(command)
             else:
                 msg = 'SKIPPING: {} already present in the database'
                 logging.info(msg.format(beer.full_beer_name))
@@ -120,4 +142,12 @@ def scrape_all_products_info():
 
 
 if __name__ == '__main__':
-    scrape_all_products_info()
+    parser = argparse.ArgumentParser(
+        description='Scrape all beers and meatadata from beerhawk, brewerydb and ratebeer')
+    parser.add_argument('--brewerydb', '-b',
+                        help='update brewerydb information in the database', action='store_true')
+    args = vars(parser.parse_args())
+    if args['brewerydb']:
+        update_brewerydb()
+    else:
+        scrape_all_products_info()
