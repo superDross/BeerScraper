@@ -62,7 +62,7 @@ def all_beers_from_brewery(brewery):
         return beers
 
 
-def fuzzy_query_match(query, beers, min_match=100):
+def fuzzy_query_match(query, beers, min_match=95):
     ''' Find the best partial match between a
         search query and beer name and return
         the beer name if it meets the given
