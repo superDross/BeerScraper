@@ -4,6 +4,7 @@ from tabulate import tabulate
 import logging
 import pandas as pd
 import collections
+import custom_exceptions
 import sys
 
 
@@ -28,6 +29,7 @@ class DataBase(object):
         ''' Parse a command to MySQL and commit it.'''
         with self.db.cursor() as cursor:
             try:
+                print(command)
                 cursor.execute(command)
                 self.db.commit()
             except Exception as e:
@@ -58,12 +60,14 @@ class SQLTable(DataBase):
         with self.db.cursor() as cursor:
             cursor.execute(command)
 
-    def dict2cmd(self, dictionary):
-        ''' Construct a INSERT SQL command from a dict and execute the command.
-            Where the keys are column names in table and items are values.
+    def dict2cmd(self, dictionary, command='insert'):
+        ''' Construct a INSERT/USE SQL command from a dict, where
+            the keys are column names in table and items are values.
         '''
+        funcs = {'insert': self._insert_cmd,
+                 'update': self._update_cmd}
         dictionary = collections.OrderedDict(dictionary)
-        keys = ', '.join([k for k, i in dictionary.items()])
+        keys = [k for k, i in dictionary.items()]
         items = []
         for k, i in dictionary.items():
             if isinstance(i, int) or isinstance(i, float):
@@ -73,10 +77,27 @@ class SQLTable(DataBase):
             elif isinstance(i, str):
                 i = "'{}'".format(i.replace("'", "").replace('"', ''))
             items.append(i)
+        func = funcs.get(command)
+        if not func:
+            msg = '{} is not a valid command argument. Only {} are valid.'
+            valid = ', '.join(funcs.keys())
+            msg = msg.format(command, valid)
+            raise custom_exceptions.InvalidChoice(
+                command, valid, msg)
+        sql_cmd = func(keys, items)
+        return sql_cmd
+
+    def _update_cmd(self, keys, items):
+        equals = ['{} = {}'.format(k, i) for k, i in zip(keys, items)]
+        command = 'UPDATE {} SET '.format(self.table) + ', '.join(equals)
+        return command
+
+    def _insert_cmd(self, keys, items):
+        keys = ', '.join(keys)
         items = ', '.join(items)
         sql_cmd = 'INSERT INTO {} ({}) VALUES ({})'.format(
             self.table, keys, items)
-        self.cmd(sql_cmd)
+        return sql_cmd
 
     def print(self, command):
         ''' Print the command.'''
