@@ -42,8 +42,9 @@ class Dict2Command(object):
     ''' Converts dictionary entries into mySQL commands and returns as a string.
 
     Attributes:
-        self.dictionary = dict where keys are column in table, items are values.
-                          used as to change column values in a SQL table.
+        self.dictionary = dict where keys are columns in table, items are
+                          values. used as to change column values in a SQL
+                          table.
         self.table = SQL table to apply the command to
         self.command = command type e.g. insert, update etc.
         self.where = a dict for WHERE command (key is column)
@@ -63,16 +64,28 @@ class Dict2Command(object):
         self.dictionary = self._correct_items(dictionary)
         self.table = table
         self.command = command
-        self.conditions = self._correct_items(conditions) if conditions else None
+        self.conditions = self._correct_items(
+            conditions) if conditions else None
         self.funcs = {'insert': self._insert_cmd,
                       'update': self._update_cmd}
 
     def _key_equals_item_str(self, d):
+        ''' Transform dict to k = i string.
+
+        Example:
+            d = {'k1': 'i1', 'k2',:'i2'}
+            self._key_equals_item_str(d)
+        Returns:
+            'k1 = "i1", k2 = "i2"'
+            '''
         equals = ['{} = {}'.format(k, i)
                   for k, i in zip(d.keys(), d.values())]
         return ', '.join(equals)
 
     def _correct_items(self, dictionary):
+        ''' Clean up items in a dictionary so it can be transformed to
+            an SQL command.
+        '''
         dictionary = collections.OrderedDict(dictionary)
         for k, i in dictionary.items():
             if isinstance(i, int) or isinstance(i, float):
@@ -85,18 +98,21 @@ class Dict2Command(object):
         return dictionary
 
     def _update_cmd(self):
-        if not self.conditions:
-            raise TypeError('conditions argument required to'
-                            'construct an UPDATE command.')
+        ''' mySQL UPDATE command.'''
         set_str = self._key_equals_item_str(self.dictionary)
-        where_str = self._key_equals_item_str(self.conditions)
         update_cmd = 'UPDATE {} '.format(self.table)
         set_cmd = 'SET {}'.format(set_str)
-        where_cmd = 'WHERE {}'.format(where_str)
-        command = ' '.join([update_cmd, set_cmd, where_cmd])
+        if self.conditions:
+            where_str = self._key_equals_item_str(self.conditions)
+            where_cmd = 'WHERE {}'.format(where_str)
+            commands = [update_cmd, set_cmd, where_cmd]
+        else:
+            commands = [update_cmd, set_cmd]
+        command = ' '.join(commands)
         return command
 
     def _insert_cmd(self):
+        ''' mySQL INSERT command.'''
         keys = ', '.join(self.dictionary.keys())
         items = ', '.join(self.dictionary.values())
         sql_cmd = 'INSERT INTO {} ({}) VALUES ({})'.format(

@@ -72,8 +72,8 @@ def fuzzy_query_match(query, beers, brewery, min_match=75):
     sr = []
     all_beer_names = [x.get('name') for x in beers]
     for beer in all_beer_names:
-        # simple ratio that doesnt care about the order of substrings
         corrected_beer = remove_brewery_name_from_beer(beer, brewery)
+        # simple ratio that doesnt care about the order of substrings
         compare = fuzz.token_sort_ratio(query.lower(), corrected_beer)
         sr.append(compare)
     if max(sr) >= min_match:
